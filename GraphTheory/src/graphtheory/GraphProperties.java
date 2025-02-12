@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.util.*;
 
+
 /**
  *
  * @author mk
@@ -18,6 +19,8 @@ public class GraphProperties {
     public int[][] adjacencyMatrix;
     public int[][] distanceMatrix;
     public Vector<VertexPair> vpList;
+    public List<List<Integer>> bridges = new ArrayList();
+    private static GraphProperties instance;
 
     public int[][] generateAdjacencyMatrix(Vector<Vertex> vList, Vector<Edge> eList) {
         adjacencyMatrix = new int[vList.size()][vList.size()];
@@ -32,6 +35,19 @@ public class GraphProperties {
         for (int i = 0; i < eList.size(); i++) {
             adjacencyMatrix[vList.indexOf(eList.get(i).vertex1)][vList.indexOf(eList.get(i).vertex2)] = 1;
             adjacencyMatrix[vList.indexOf(eList.get(i).vertex2)][vList.indexOf(eList.get(i).vertex1)] = 1;
+        }
+
+        // Populate adjacency matrix with edge weights
+        for (Edge edge : eList) {
+            int index1 = vList.indexOf(edge.vertex1);
+            int index2 = vList.indexOf(edge.vertex2);
+            if (edge.weight != null) { // If the edge has a weight
+                adjacencyMatrix[index1][index2] = edge.weight;
+                adjacencyMatrix[index2][index1] = edge.weight; // Undirected graph
+            } else {
+                adjacencyMatrix[index1][index2] = 1; // Default weight for unweighted edges
+                adjacencyMatrix[index2][index1] = 1; // Undirected graph
+            }
         }
 
 
@@ -73,6 +89,17 @@ public class GraphProperties {
             }
         }
 
+        int[] visited = new int[vSize];
+        int[] insertion_time = new int[vSize];
+        int[] minimum_insertion = new int[vSize];
+
+        int count=1;
+        for(int i = 0; i < vSize;i++){
+            if(visited[i]==0){
+                getBridge(i,-1,visited,insertion_time,minimum_insertion,count,adj);
+            }
+        }
+
         System.out.println("Articulation points of the graph");
 
         boolean[] isAP = AP(adj, vSize);
@@ -80,11 +107,64 @@ public class GraphProperties {
         return isAP;
     }
 
-
     static void addEdge(ArrayList<ArrayList<Integer>> adj, int u, int v)
     {
         adj.get(u).add(v);
         adj.get(v).add(u);
+    }
+
+    static void getBridge(int node,int parent,int[] visited,int[] insertion_time,int[] minimum_insertion,int count,ArrayList<ArrayList<Integer>> graph){
+
+        visited[node]=1;
+        insertion_time[node] = minimum_insertion[node] = count++;
+        for(int nbr:graph.get(node)){
+            if(nbr==parent) continue;
+
+            if (visited[nbr] == 0) {
+                getBridge(nbr, node, visited, insertion_time, minimum_insertion, count, graph);
+                minimum_insertion[node] = Math.min(minimum_insertion[node], minimum_insertion[nbr]);
+
+                if (minimum_insertion[nbr] > insertion_time[node]) {
+                    System.out.println("Bridge edge is between Node " + nbr + " and Node " + node);
+                    // Input nbr and node in a list that contains the pair
+                    List<Integer> bridge = new ArrayList<>();
+                    bridge.add(Math.min(nbr, node)); // Store smaller node first for consistency
+                    bridge.add(Math.max(nbr, node)); // Store larger node second
+                    GraphProperties gp = GraphProperties.getInstance();
+                    if (!bridgeExists(gp.bridges, bridge)) { // Use the helper function
+                        gp.bridges.add(bridge);
+                    }
+
+                }
+            } else {
+                minimum_insertion[node] = Math.min(minimum_insertion[node], insertion_time[nbr]);
+            }
+
+            /*
+            if(visited[nbr]==0){
+                getBridge(nbr,node,visited,insertion_time,minimum_insertion,count,graph);
+                minimum_insertion[node]=Math.min(minimum_insertion[node],minimum_insertion[nbr]);
+                if(minimum_insertion[nbr]>insertion_time[node]){
+                    System.out.println("Bridge edge is between Node "+nbr+" and Node "+node);
+
+                }
+            }
+            else{
+                minimum_insertion[node]=Math.min(minimum_insertion[node],insertion_time[nbr]);
+            }
+
+             */
+        }
+    }
+
+    private static boolean bridgeExists(List<List<Integer>> bridges, List<Integer> bridgeToCheck) {
+
+        for (List<Integer> existingBridge : bridges) {
+            if (existingBridge.equals(bridgeToCheck)) {
+                return true; // Bridge already exists
+            }
+        }
+        return false; // Bridge does not exist
     }
 
     static void APUtil(ArrayList<ArrayList<Integer> > adj, int u,
@@ -154,21 +234,27 @@ public class GraphProperties {
     public int[][] generateDistanceMatrix(Vector<Vertex> vList) {
         distanceMatrix = new int[vList.size()][vList.size()];
 
-        for (int a = 0; a < vList.size(); a++)//initialize
-        {
+        // Initialize distance matrix with adjacency matrix values
+        for (int a = 0; a < vList.size(); a++) {
             for (int b = 0; b < vList.size(); b++) {
-                distanceMatrix[a][b] = 0;
+                if (a == b) {
+                    distanceMatrix[a][b] = 0; // Distance to self is 0
+                } else if (adjacencyMatrix[a][b] != 0) {
+                    distanceMatrix[a][b] = adjacencyMatrix[a][b]; // Direct edge weight
+                } else {
+                    distanceMatrix[a][b] = Integer.MAX_VALUE; // No direct edge
+                }
             }
         }
 
-        VertexPair vp;
-        int shortestDistance;
-        for (int i = 0; i < vList.size(); i++) {
-            for (int j = i + 1; j < vList.size(); j++) {
-                vp = new VertexPair(vList.get(i), vList.get(j));
-                shortestDistance = vp.getShortestDistance();
-                distanceMatrix[vList.indexOf(vp.vertex1)][vList.indexOf(vp.vertex2)] = shortestDistance;
-                distanceMatrix[vList.indexOf(vp.vertex2)][vList.indexOf(vp.vertex1)] = shortestDistance;
+        // Apply Floyd-Warshall algorithm to compute shortest paths
+        for (int k = 0; k < vList.size(); k++) {
+            for (int i = 0; i < vList.size(); i++) {
+                for (int j = 0; j < vList.size(); j++) {
+                    if (distanceMatrix[i][k] != Integer.MAX_VALUE && distanceMatrix[k][j] != Integer.MAX_VALUE) {
+                        distanceMatrix[i][j] = Math.min(distanceMatrix[i][j], distanceMatrix[i][k] + distanceMatrix[k][j]);
+                    }
+                }
             }
         }
         return distanceMatrix;
@@ -231,6 +317,13 @@ public class GraphProperties {
 
     }
 
+    public static GraphProperties getInstance() {
+        if (instance == null) {
+            instance = new GraphProperties();
+        }
+        return instance;
+    }
+
     public void drawAdjacencyMatrix(Graphics g, Vector<Vertex> vList, int x, int y) {
         int cSize = 20;
         g.setColor(Color.LIGHT_GRAY);
@@ -247,13 +340,34 @@ public class GraphProperties {
             }
         }
 
+        // Add here the showing of the cutpoints and bridges
         boolean[] isAP = getAllCutpoints(adjacencyMatrix, vList.size());
 
-        g.drawString("Cutpoints", x,  2*cSize + y + (vList.size() * cSize + cSize));
+        g.drawString("Cutpoints", x,  2*cSize + y + (vList.size() * cSize));
 
-        for (int u = 0; u < vList.size(); u++)
-            if (isAP[u] == true)
-                g.drawString(" " + u, x + 10 * u,  2*cSize + y/2 + y + (vList.size() * cSize + cSize));
+        int spacer = 0;
+        for (int u = 0; u < vList.size(); u++) {
+            if (isAP[u] == true) {
+                g.drawString(" " + u, 10 + x + spacer, 2 * cSize + y / 2 + y + (vList.size() * cSize));
+                spacer = spacer + 15;
+            }
+        }
+
+        g.drawString("Bridges", x,  2*cSize + 2*y + (vList.size() * cSize));
+
+        GraphProperties gp = GraphProperties.getInstance();
+
+        List<String> bridgeStrings = new ArrayList<>();
+        for (List<Integer> bridge : gp.bridges) {
+            String bridgeString = String.format("(%d-%d)", bridge.get(0), bridge.get(1));
+            bridgeStrings.add(bridgeString);
+        }
+        int space = 0;
+        for (int i = 0; i < bridgeStrings.size(); i++){
+            g.drawString(bridgeStrings.get(i),10 + x + space,  2*cSize + 2*y + y/2 + (vList.size() * cSize));
+            space = space + 35;
+        }
+
     }
 
     public void drawDistanceMatrix(Graphics g, Vector<Vertex> vList, int x, int y) {
