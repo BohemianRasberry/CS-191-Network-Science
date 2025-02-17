@@ -4,10 +4,16 @@
  */
 package graphtheory;
 
-import java.awt.Color;
-import java.awt.Graphics;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.ImageObserver;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
-
+import java.util.List;
 
 /**
  *
@@ -50,40 +56,30 @@ public class GraphProperties {
             }
         }
 
-
-        //
-        /* ADJACENCY MATRIX IS VLIST X VLIST SIZE
-        for (int i = 0; i < vList.size(); i++){
-            for (int j = 0; j < vList.size(); j++){
-                System.out.println(adjacencyMatrix[i][j]);
-            }
-        }
-         */
         getAllCutpoints(adjacencyMatrix, vList.size());
 
         return adjacencyMatrix;
     }
 
-    static boolean[] getAllCutpoints(int[][] adjacencyMatrix, int vSize){
+    static boolean[] getAllCutpoints(int[][] adjacencyMatrix, int vSize) {
 
-        if (vSize < 3){
+        if (vSize < 3) {
             boolean[] temp = new boolean[vSize];
-            for (int i = 0; i < vSize; i++){
+            for (int i = 0; i < vSize; i++) {
                 temp[i] = false;
             }
             return temp;
         }
 
-        ArrayList<ArrayList<Integer> > adj = new ArrayList<ArrayList<Integer> >(vSize);
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<ArrayList<Integer>>(vSize);
 
         for (int i = 0; i < vSize; i++) {
             adj.add(new ArrayList<Integer>());
         }
 
-
-        for (int i = 1; i < vSize; i++){
-            for (int j = 0; j < i; j++){
-                if (adjacencyMatrix[i][j] > 0){
+        for (int i = 1; i < vSize; i++) {
+            for (int j = 0; j < i; j++) {
+                if (adjacencyMatrix[i][j] > 0) {
                     addEdge(adj, i, j);
                 }
             }
@@ -93,10 +89,10 @@ public class GraphProperties {
         int[] insertion_time = new int[vSize];
         int[] minimum_insertion = new int[vSize];
 
-        int count=1;
-        for(int i = 0; i < vSize;i++){
-            if(visited[i]==0){
-                getBridge(i,-1,visited,insertion_time,minimum_insertion,count,adj);
+        int count = 1;
+        for (int i = 0; i < vSize; i++) {
+            if (visited[i] == 0) {
+                getBridge(i, -1, visited, insertion_time, minimum_insertion, count, adj);
             }
         }
 
@@ -107,18 +103,17 @@ public class GraphProperties {
         return isAP;
     }
 
-    static void addEdge(ArrayList<ArrayList<Integer>> adj, int u, int v)
-    {
+    static void addEdge(ArrayList<ArrayList<Integer>> adj, int u, int v) {
         adj.get(u).add(v);
         adj.get(v).add(u);
     }
 
-    static void getBridge(int node,int parent,int[] visited,int[] insertion_time,int[] minimum_insertion,int count,ArrayList<ArrayList<Integer>> graph){
+    static void getBridge(int node, int parent, int[] visited, int[] insertion_time, int[] minimum_insertion, int count, ArrayList<ArrayList<Integer>> graph) {
 
-        visited[node]=1;
+        visited[node] = 1;
         insertion_time[node] = minimum_insertion[node] = count++;
-        for(int nbr:graph.get(node)){
-            if(nbr==parent) continue;
+        for (int nbr : graph.get(node)) {
+            if (nbr == parent) continue;
 
             if (visited[nbr] == 0) {
                 getBridge(nbr, node, visited, insertion_time, minimum_insertion, count, graph);
@@ -167,10 +162,9 @@ public class GraphProperties {
         return false; // Bridge does not exist
     }
 
-    static void APUtil(ArrayList<ArrayList<Integer> > adj, int u,
+    static void APUtil(ArrayList<ArrayList<Integer>> adj, int u,
                        boolean visited[], int disc[], int low[],
-                       int parent, boolean isAP[])
-    {
+                       int parent, boolean isAP[]) {
         // Count of children in DFS Tree
         int children = 0;
 
@@ -208,8 +202,7 @@ public class GraphProperties {
             isAP[u] = true;
     }
 
-    static boolean[] AP(ArrayList<ArrayList<Integer> > adj, int V)
-    {
+    static boolean[] AP(ArrayList<ArrayList<Integer>> adj, int V) {
         boolean[] visited = new boolean[V];
         int[] disc = new int[V];
         int[] low = new int[V];
@@ -343,7 +336,7 @@ public class GraphProperties {
         // Add here the showing of the cutpoints and bridges
         boolean[] isAP = getAllCutpoints(adjacencyMatrix, vList.size());
 
-        g.drawString("Cutpoints", x,  2*cSize + y + (vList.size() * cSize));
+        g.drawString("Cutpoints", x, 2 * cSize + y + (vList.size() * cSize));
 
         int spacer = 0;
         for (int u = 0; u < vList.size(); u++) {
@@ -353,7 +346,7 @@ public class GraphProperties {
             }
         }
 
-        g.drawString("Bridges", x,  2*cSize + 2*y + (vList.size() * cSize));
+        g.drawString("Bridges", x, 2 * cSize + 2 * y + (vList.size() * cSize));
 
         GraphProperties gp = GraphProperties.getInstance();
 
@@ -363,8 +356,8 @@ public class GraphProperties {
             bridgeStrings.add(bridgeString);
         }
         int space = 0;
-        for (int i = 0; i < bridgeStrings.size(); i++){
-            g.drawString(bridgeStrings.get(i),10 + x + space,  2*cSize + 2*y + y/2 + (vList.size() * cSize));
+        for (int i = 0; i < bridgeStrings.size(); i++) {
+            g.drawString(bridgeStrings.get(i), 10 + x + space, 2 * cSize + 2 * y + y / 2 + (vList.size() * cSize));
             space = space + 35;
         }
 
@@ -373,7 +366,7 @@ public class GraphProperties {
     public void drawDistanceMatrix(Graphics g, Vector<Vertex> vList, int x, int y) {
         int cSize = 20;
         g.setColor(Color.LIGHT_GRAY);
-        g.fillRect(x, y-30, vList.size() * cSize+cSize, vList.size() * cSize+cSize);
+        g.fillRect(x, y - 30, vList.size() * cSize + cSize, vList.size() * cSize + cSize);
         g.setColor(Color.black);
         g.drawString("ShortestPathMatrix", x, y - cSize);
         for (int i = 0; i < vList.size(); i++) {
@@ -385,6 +378,65 @@ public class GraphProperties {
                 g.drawString("" + distanceMatrix[i][j], x + cSize * (j + 1), y + cSize * (i + 1));
             }
         }
+    }
+
+    public void drawDegreeDistribution(Graphics g, int x, int y) {
+        int vSize = adjacencyMatrix.length;
+        ArrayList<ArrayList<Integer>> adj = new ArrayList<ArrayList<Integer>>(vSize);
+
+        for (int i = 0; i < vSize; i++) {
+            adj.add(new ArrayList<Integer>());
+        }
+
+        for (int i = 1; i < vSize; i++) {
+            for (int j = 0; j < i; j++) {
+                if (adjacencyMatrix[i][j] > 0) {
+                    addEdge(adj, i, j);
+                }
+            }
+        }
+
+        int maxDegree = 0;
+
+        ArrayList<Integer> adjArray = new ArrayList<>();
+        // DEGREE DISTRIBUTION HERE
+        for (int i = 0; i < vSize; i++) {
+            adjArray.add(adj.get(i).size());
+            if (adjArray.get(i) > maxDegree) {
+                maxDegree = adjArray.get(i);
+            }
+        }
+
+        int[] values = new int[maxDegree + 1];
+        String[] categories = new String[maxDegree + 1];
+
+        for (int i = 0; i <= maxDegree; i++) {
+            categories[i] = Integer.toString(i);
+            values[i] = 0;
+        }
+
+        for (int i = 0; i < adjArray.size(); i++) {
+            values[adjArray.get(i)] = values[adjArray.get(i)] + 1;
+        }
+
+        BarChartSwing.saveChart("degreeDistribution.png", values, categories);
+
+        // Open file here
+        String cwd = Path.of("").toAbsolutePath().toString();
+
+        ImageIcon icon = new ImageIcon(cwd + "\\GraphTheory\\src\\graphtheory\\degreeDistribution.png");
+        if (icon.getImageLoadStatus() != MediaTracker.COMPLETE) {
+            System.out.println("Image failed to load!");
+        } else {
+            System.out.println("Check other error");
+        }
+
+        Image image = icon.getImage();
+
+        g.setColor(Color.BLACK);
+        g.fillRect(x + 200, y, 250, 200);  // Draw a black rectangle as a test
+
+        g.drawImage(image, x + 200, y, 250, 200, null);
     }
 
     public Vector<Vertex> vertexConnectivity(Vector<Vertex> vList) {
@@ -451,6 +503,7 @@ public class GraphProperties {
         }
     }
 
+
     private class ascendingDegreeComparator implements Comparator {
 
         public int compare(Object v1, Object v2) {
@@ -491,5 +544,22 @@ public class GraphProperties {
                 return 0;
             }
         }
+    }
+
+    public void deleteFileIfExists() {
+        String cwd = Path.of("").toAbsolutePath().toString();
+        String folderPath = cwd + "\\GraphTheory\\src\\graphtheory\\";
+        String fileName = "degreeDistribution.png";
+        File file = new File(folderPath, fileName);
+        if (file.exists()) {
+            if (file.delete()) {
+                System.out.println("File deleted successfully.");
+            } else {
+                System.err.println("Failed to delete file.");
+            }
+        } else {
+            System.out.println("File does not exist.");
+        }
+
     }
 }

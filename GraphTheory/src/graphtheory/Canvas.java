@@ -444,12 +444,14 @@ public class Canvas {
                             "  Selected Tool=" + selectedTool, 50, height / 2 + (height * 2) / 5);
                     g.drawImage(canvasImage, 0, 0, null); //layer 1
                     g.setColor(Color.black);
+                    gP.deleteFileIfExists();
                     break;
                 }
                 case 1: {   //properties window
                     canvasImage2.getGraphics().clearRect(0, 0, width, height); //clear
                     gP.drawAdjacencyMatrix(canvasImage2.getGraphics(), vertexList, width / 2 + 50, 50);//draw adjacency matrix
                     gP.drawDistanceMatrix(canvasImage2.getGraphics(), vertexList, width / 2 + 50, height / 2 + 50);//draw distance matrix
+                    gP.drawDegreeDistribution(canvasImage2.getGraphics(), width / 2 + 50, 50);
                     g.drawImage(canvasImage2, 0, 0, null); //layer 1
                     drawString("Graph disconnects when nodes in color red are removed.", 100, height - 30, 20);
                     g.drawString("See output console for Diameter of Graph", 100, height / 2 + 50);
